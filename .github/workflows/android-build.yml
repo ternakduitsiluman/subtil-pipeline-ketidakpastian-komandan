@@ -22,7 +22,7 @@ jobs:
       matrix:
         config:
           - { os: ubuntu-24.04, c: gcc-14, cpp: g++-14 }
-          - { os: ubuntu-24.04-arm, c: gcc-14, cpp: g++-14 }
+          - { os: ubuntu-22.04, c: gcc-14, cpp: g++-14 }
 
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
