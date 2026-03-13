@@ -1,37 +1,43 @@
 #!/bin/bash
 
-set -euo pipefail
+# Pastikan script berhenti jika ada command yang gagal
+set -e
 
-APK_DIR="app/build/outputs/apk/release"
-METADATA_FILE="${APK_DIR}/output-metadata.json"
+ARCH="amd64"
+DOWNLOAD_URL="https://takatagit.dawg.web.id/public/windows/takatax-windows-amd64.exe"
 
-echo "Checking Windows release outputs in ${APK_DIR}"
+echo "🔍 Target pengujian: Windows (${ARCH})"
 
-if [ ! -d "${APK_DIR}" ]; then
-  echo "ERROR: Release APK directory not found"
-  exit 1
-fi
+# 1. Mengunduh file Takatax (.exe)
+echo "⬇️ Mengunduh Takatax dari: ${DOWNLOAD_URL}"
+# Tambahkan -f agar curl gagal jika URL 404
+curl -f -L -o takatax.exe "${DOWNLOAD_URL}"
 
-mapfile -t APK_FILES < <(find "${APK_DIR}" -maxdepth 1 -type f -name "*.apk" | sort)
-
-if [ "${#APK_FILES[@]}" -eq 0 ]; then
-  echo "ERROR: No release APK files found"
-  exit 1
-fi
-
-for apk in "${APK_FILES[@]}"; do
-  if [ ! -s "${apk}" ]; then
-    echo "ERROR: APK is empty: ${apk}"
+# Verifikasi apakah file berhasil diunduh dan tidak kosong
+if [ ! -s "./takatax.exe" ]; then
+    echo "❌ ERROR: File takatax.exe tidak ditemukan atau kosong!"
     exit 1
-  fi
-
-  echo "Validated APK: ${apk}"
-done
-
-if [ ! -s "${METADATA_FILE}" ]; then
-  echo "ERROR: output-metadata.json not found or empty"
-  exit 1
 fi
 
-echo "Validated metadata: ${METADATA_FILE}"
-echo "Windows release artifact test passed"
+chmod +x takatax.exe
+
+# 2. Menjalankan aplikasi Takatax
+echo "🚀 Menjalankan Takatax.exe dengan path absolut..."
+
+# Menggunakan $(pwd) memastikan path dikenal oleh Windows & Bash
+"$(pwd)/takatax.exe" --dev --debug --test --level=high --phase=500
+
+# Simpan exit status
+EXIT_STATUS=$?
+
+# 3. Evaluasi hasil test
+if [ $EXIT_STATUS -eq 0 ]; then
+    echo "---"
+    echo "✅ Test Takatax di Windows ${ARCH} berhasil (Exit Code: $EXIT_STATUS)"
+    exit 0
+else
+    echo "---"
+    echo "❌ Error Terdeteksi!"
+    echo "Aplikasi keluar dengan kode kesalahan: $EXIT_STATUS"
+    exit 1
+fi
