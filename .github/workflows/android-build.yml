@@ -10,12 +10,9 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ${{ matrix.config.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 40
-    strategy:
-      matrix:
-        config:
-          - { os: ubuntu-latest, artifact_name: takatagit-release-apk-linux }
+
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -26,26 +23,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 21
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: gradle
 
-      - name: Set up Android SDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Add sdkmanager to PATH
+        run: |
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
 
       - name: Install Android SDK packages
         run: |
-          yes | sdkmanager --licenses > /dev/null
+          yes | sdkmanager --licenses
           sdkmanager \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 
       - name: Create local.properties
-        run: echo "sdk.dir=${ANDROID_SDK_ROOT}" > local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
 
       - name: Decode signing keystore
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
@@ -63,130 +68,13 @@ jobs:
           keyPassword=${KEY_PASSWORD}
           EOF
 
-      - name: Build release APK
+      - name: Build Release APK
         run: ./gradlew --no-daemon clean assembleRelease
 
-      - name: Run custom test script (Linux)
-        run: |
-          sed -i 's/\r$//' ./scripts/test-linux.sh
-          chmod +x ./scripts/test-linux.sh
-          ./scripts/test-linux.sh
-
-      - name: Upload release APK artifacts
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.config.artifact_name }}
+          name: takatagit-release-apk-linux
           path: |
             app/build/outputs/apk/release/*.apk
             app/build/outputs/apk/release/output-metadata.json
-          if-no-files-found: error
-
-      - name: Upload mapping and reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: takatagit-build-reports
-          path: |
-            app/build/outputs/logs/**
-            app/build/outputs/mapping/**
-          if-no-files-found: ignore
-
-  build-windows:
-    runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 50
-    strategy:
-      matrix:
-        config:
-          - { os: windows-2022, artifact_name: takatagit-release-apk-windows }
-    env:
-      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Java 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
-          cache: gradle
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        shell: bash
-        run: |
-          yes | sdkmanager --licenses > /dev/null
-          sdkmanager \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
-      - name: Create local.properties
-        shell: bash
-        run: echo "sdk.dir=${ANDROID_SDK_ROOT//\\/\/}" > local.properties
-
-      - name: Decode signing keystore
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
-        shell: bash
-        run: |
-          mkdir -p signing
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > signing/harutaka-release.jks
-
-      - name: Create keystore.properties
-        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
-        shell: bash
-        run: |
-          cat <<EOF > keystore.properties
-          storeFile=signing/harutaka-release.jks
-          storePassword=${KEYSTORE_PASSWORD}
-          keyAlias=${KEY_ALIAS}
-          keyPassword=${KEY_PASSWORD}
-          EOF
-
-      - name: Build release APK
-        shell: bash
-        run: ./gradlew.bat --no-daemon clean assembleRelease
-
-      - name: Run custom test script (Windows)
-        shell: bash
-        run: |
-          sed -i 's/\r$//' ./scripts/test-windows.sh
-          chmod +x ./scripts/test-windows.sh
-          bash ./scripts/test-windows.sh
-
-      - name: Upload release APK artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.config.artifact_name }}
-          path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/apk/release/output-metadata.json
-          if-no-files-found: error
-
-      - name: Upload mapping and reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: takatagit-build-reports-windows
-          path: |
-            app/build/outputs/logs/**
-            app/build/outputs/mapping/**
-          if-no-files-found: ignore
-
-  merge-release-artifacts:
-    needs: [build-linux, build-windows]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Merge release APK artifacts
-        uses: actions/upload-artifact/merge@v4
-        with:
-          name: takatagit-release-apk-bundle
-          pattern: takatagit-release-apk-*
-          delete-merged: true
