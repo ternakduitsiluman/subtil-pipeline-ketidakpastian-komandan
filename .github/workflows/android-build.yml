@@ -21,8 +21,8 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-24.04, c: gcc-14, cpp: g++-14}
-          - {os: ubuntu-24.04-arm, c: gcc-14, cpp: g++-14}
+          - { os: ubuntu-24.04, c: gcc-14, cpp: g++-14 }
+          - { os: ubuntu-24.04-arm, c: gcc-14, cpp: g++-14 }
 
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -31,7 +31,14 @@ jobs:
       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Normalize line endings
+        run: |
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
+          find . -type f -name "*.sh" -exec sed -i 's/\r$//' {} +
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -44,6 +51,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install SDK packages
+        shell: bash
         run: |
           yes | sdkmanager --licenses || true
           sdkmanager \
@@ -51,20 +59,25 @@ jobs:
             "platforms;android-35" \
             "build-tools;35.0.0" || true
 
-      - run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - run: chmod +x gradlew
-
-      - name: Decode keystore
+      - name: Decode signing keystore
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
         run: |
           mkdir -p signing
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > signing/harutaka-release.jks
 
-      - name: Build
+      - name: Build release APK
+        shell: bash
         run: ./gradlew --no-daemon clean assembleRelease
+      
+      - name: Run Custom Test Script (Linux)
+        run: |
+          chmod +x ./scripts/test-linux.sh
+          ./scripts/test-linux.sh
 
-      - name: Upload APK
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: takatagit-release-apk-${{ matrix.config.os }}
@@ -91,19 +104,35 @@ jobs:
       KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Normalize line endings
+        shell: bash
+        run: |
+          sed -i 's/\r$//' gradlew
+          chmod +x gradlew
+          find . -type f -name "*.sh" -exec sed -i 's/\r$//' {} +
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
           cache: gradle
 
-      - name: Build
+      - name: Build release APK
         shell: bash
         run: ./gradlew.bat --no-daemon clean assembleRelease
 
-      - name: Upload APK
+      - name: Run Custom Test Script (Windows)
+        shell: bash
+        run: |
+          sed -i 's/\r$//' ./scripts/test-windows.sh
+          chmod +x ./scripts/test-windows.sh
+          bash ./scripts/test-windows.sh
+
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: takatagit-release-apk-${{ matrix.config.os }}
@@ -115,6 +144,7 @@ jobs:
   merge-release-artifacts:
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Merge artifacts
