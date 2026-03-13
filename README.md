@@ -1,4 +1,4 @@
-# TakataGit
+# TakataGit 
 
 TakataGit adalah aplikasi Android berbasis Jetpack Compose untuk melihat daftar log session dan detail log terminal secara real-time.
 
