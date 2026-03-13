@@ -12,6 +12,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+
   build-linux:
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 40
@@ -61,6 +62,11 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
+      - name: Normalize line endings
+        run: |
+          sed -i 's/\r$//' gradlew
+          find scripts -type f -name "*.sh" -exec sed -i 's/\r$//' {} +
+
       - name: Fix gradlew permission
         run: chmod +x gradlew
 
@@ -85,10 +91,6 @@ jobs:
 
       - name: Run Custom Test Script (Linux)
         run: |
-         # Membersihkan format CRLF (Windows) menjadi LF (Linux)
-          sed -i 's/\r$//' ./scripts/test-linux.sh
-        
-          # Memberikan akses dan menjalankan script
           chmod +x ./scripts/test-linux.sh
           ./scripts/test-linux.sh
 
@@ -169,20 +171,12 @@ jobs:
       - name: Build release APK
         shell: bash
         run: ./gradlew.bat --no-daemon clean assembleRelease
-        
+
       - name: Run Custom Test Script (Windows)
         shell: bash
         run: |
-          # Pastikan kita berada di root
-          ls -R scripts/
-        
-          # Hapus karakter \r (CRLF) yang merusak pembacaan interpreter bash
           sed -i 's/\r$//' ./scripts/test-windows.sh
-        
-          # Berikan izin eksekusi
           chmod +x ./scripts/test-windows.sh
-        
-          # Jalankan dengan pemanggilan bash eksplisit untuk menghindari error 127
           bash ./scripts/test-windows.sh
 
       - name: Upload APK artifacts
