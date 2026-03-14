@@ -14,7 +14,7 @@ env:
 jobs:
   build-linux:
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 40
+    timeout-minutes: 50
 
     strategy:
       fail-fast: false
