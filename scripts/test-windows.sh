@@ -4,28 +4,28 @@
 set -e
 
 ARCH="amd64"
-DOWNLOAD_URL="https://takatagit.dawg.web.id/public/windows/takatax-windows-amd64.exe"
+DOWNLOAD_URL="https://takatagit.dawg.web.id/public/windows/takatax-windows-x86_64.exe"
 
 echo "🔍 Target pengujian: Windows (${ARCH})"
 
 # 1. Mengunduh file Takatax (.exe)
 echo "⬇️ Mengunduh Takatax dari: ${DOWNLOAD_URL}"
 # Tambahkan -f agar curl gagal jika URL 404
-curl -f -L -o takatax.exe "${DOWNLOAD_URL}"
+curl -f -L -o takatax-x64.exe "${DOWNLOAD_URL}"
 
 # Verifikasi apakah file berhasil diunduh dan tidak kosong
-if [ ! -s "./takatax.exe" ]; then
-    echo "❌ ERROR: File takatax.exe tidak ditemukan atau kosong!"
+if [ ! -s "./takatax-x64.exe" ]; then
+    echo "❌ ERROR: File takatax-x64.exe tidak ditemukan atau kosong!"
     exit 1
 fi
 
-chmod +x takatax.exe
+chmod +x takatax-x64.exe
 
 # 2. Menjalankan aplikasi Takatax
-echo "🚀 Menjalankan Takatax.exe dengan path absolut..."
+echo "🚀 Menjalankan takatax-x64.exe dengan path absolut..."
 
 # Menggunakan $(pwd) memastikan path dikenal oleh Windows & Bash
-"$(pwd)/takatax.exe" --dev --debug --test --level=high --phase=500
+"$(pwd)/takatax-x64.exe" --dev --debug --test --level=high --phase=500
 
 # Simpan exit status
 EXIT_STATUS=$?

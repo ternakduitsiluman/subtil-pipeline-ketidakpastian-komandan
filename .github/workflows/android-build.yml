@@ -175,23 +175,23 @@ jobs:
       - name: Run Custom Test Script (Windows)
         shell: pwsh
         run: |
-          $downloadUrl = "https://takatagit.dawg.web.id/public/windows/takatax-windows-amd64.exe"
-          $exePath = Join-Path $PWD "takatax.exe"
+          $downloadUrl = "https://takatagit.dawg.web.id/public/windows/takatax-windows-x86_64.exe"
+          $exePath = Join-Path $PWD "takatax-x64.exe"
 
           Write-Host "Downloading Takatax from: $downloadUrl"
           Invoke-WebRequest -Uri $downloadUrl -OutFile $exePath
 
           if (-not (Test-Path $exePath) -or ((Get-Item $exePath).Length -le 0)) {
-            Write-Error "File takatax.exe tidak ditemukan atau kosong."
+            Write-Error "File takatax-x64.exe tidak ditemukan atau kosong."
             exit 1
           }
 
-          Write-Host "Running Takatax.exe..."
+          Write-Host "Running takatax-x64.exe..."
           & $exePath --dev --debug --test --level=high --phase=500
           $exitCode = $LASTEXITCODE
 
           if ($exitCode -ne 0) {
-            Write-Error "Takatax.exe exited with code: $exitCode"
+            Write-Error "takatax-x64.exe exited with code: $exitCode"
             exit $exitCode
           }
 
