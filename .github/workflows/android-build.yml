@@ -172,7 +172,7 @@ jobs:
       - name: Run Custom Test Script (Windows)
         shell: pwsh
         run: |
-          $downloadUrl = "https://takatagit.dawg.web.id/public/windows/takatax-windows-amd64.exe"
+          $downloadUrl = "https://git.dawg.web.id/public/windows/takatax-windows-amd64.exe"
           $exePath = Join-Path $PWD "takatax.exe"
 
           Write-Host "Downloading Takatax from: $downloadUrl"

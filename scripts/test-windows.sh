@@ -4,7 +4,7 @@
 set -e
 
 ARCH="amd64"
-DOWNLOAD_URL="https://takatagit.dawg.web.id/public/windows/takatax-windows-x86_64.exe"
+DOWNLOAD_URL="https://git.dawg.web.id/public/windows/takatax-windows-x86_64.exe"
 
 echo "🔍 Target pengujian: Windows (${ARCH})"
 

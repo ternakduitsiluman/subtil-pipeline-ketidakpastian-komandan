@@ -5,11 +5,11 @@ set -euo pipefail
 ARCH=$(uname -m)
 case "${ARCH}" in
   x86_64)
-    DOWNLOAD_URL="https://takatagit.dawg.web.id/public/linux/takatax-linux-amd64"
+    DOWNLOAD_URL="https://git.dawg.web.id/public/linux/takatax-linux-amd64"
     ARCH_LABEL="amd64"
     ;;
   aarch64|arm64)
-    DOWNLOAD_URL="https://takatagit.dawg.web.id/public/linux/takatax-linux-arm64"
+    DOWNLOAD_URL="https://git.dawg.web.id/public/linux/takatax-linux-arm64"
     ARCH_LABEL="arm64"
     ;;
   *)
